@@ -51,11 +51,17 @@ X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, 
 # ================================
 st.subheader("Training Model Neural Network")
 
-# Kamu bisa ubah parameter di sini untuk tuning
-hidden_layer = st.slider("Jumlah Neuron (Hidden Layer)", 5, 100, 50)
-max_iter = st.slider("Jumlah Iterasi Training (max_iter)", 100, 1000, 300)
-learning_rate = st.selectbox("Learning Rate", ['constant', 'adaptive'])
+# Parameter tetap
+hidden_layer = 50        # jumlah neuron di hidden layer
+max_iter = 300           # jumlah iterasi training
+learning_rate = 'constant'  # tipe learning rate
 
+st.write(f"Model dilatih dengan parameter tetap:")
+st.write(f"- Jumlah Neuron (Hidden Layer): {hidden_layer}")
+st.write(f"- Jumlah Iterasi (max_iter): {max_iter}")
+st.write(f"- Learning Rate: {learning_rate}")
+
+# Buat dan latih model
 model = MLPClassifier(hidden_layer_sizes=(hidden_layer,),
                       activation='relu',
                       solver='adam',
@@ -109,4 +115,5 @@ if st.button("Prediksi"):
     hasil_pred = model.predict(contoh_scaled)
     pred_label = label_encoders[target].inverse_transform(hasil_pred)
     st.success(f" Prediksi: **{pred_label[0]}**")
+
 
