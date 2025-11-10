@@ -1,18 +1,18 @@
 import streamlit as st
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
 # ================================
-# 1️⃣ Judul Aplikasi
+# 1️ Judul Aplikasi
 # ================================
-st.title("🎬 Netflix Type Classifier")
-st.write("Prediksi apakah tayangan Netflix merupakan **Movie** atau **TV Show** berdasarkan fitur tertentu.")
+st.title("🎬 Netflix Type Classifier (Neural Network Version)")
+st.write("Prediksi apakah tayangan Netflix merupakan **Movie** atau **TV Show** menggunakan model **Neural Network (MLPClassifier)**.")
 
 # ================================
-# 2️⃣ Baca Dataset
+# 2️ Baca Dataset
 # ================================
 @st.cache_data
 def load_data():
@@ -25,7 +25,7 @@ st.write("### Contoh Data:")
 st.dataframe(df.head())
 
 # ================================
-# 3️⃣ Persiapan Data
+# 3️ Persiapan Data
 # ================================
 target = 'type'
 features = ['release_year', 'rating', 'duration', 'listed_in', 'country']
@@ -38,25 +38,45 @@ for col in features + [target]:
 
 X = df[features]
 y = df[target]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Normalisasi fitur agar cocok untuk Neural Network
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
 # ================================
-# 4️⃣ Latih Model
+# 4️ Latih Model Neural Network
 # ================================
-model = RandomForestClassifier(random_state=42)
+st.subheader("Training Model Neural Network")
+
+# Kamu bisa ubah parameter di sini untuk tuning
+hidden_layer = st.slider("Jumlah Neuron (Hidden Layer)", 5, 100, 50)
+max_iter = st.slider("Jumlah Iterasi Training (max_iter)", 100, 1000, 300)
+learning_rate = st.selectbox("Learning Rate", ['constant', 'adaptive'])
+
+model = MLPClassifier(hidden_layer_sizes=(hidden_layer,),
+                      activation='relu',
+                      solver='adam',
+                      max_iter=max_iter,
+                      learning_rate=learning_rate,
+                      random_state=42)
+
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 
 # ================================
-# 5️⃣ Tampilkan Evaluasi
+# 5️ Tampilkan Evaluasi
 # ================================
-st.subheader("Evaluasi Model")
-st.write("Akurasi Model:", accuracy_score(y_test, y_pred))
+st.subheader("📊 Evaluasi Model")
+akurasi = accuracy_score(y_test, y_pred)
+st.write("**Akurasi Model:**", round(akurasi, 4))
 st.text("Laporan Klasifikasi:")
 st.text(classification_report(y_test, y_pred))
 
 # ================================
-# 6️⃣ Input Data Baru
+# 6️ Input Data Baru
 # ================================
 st.subheader("🎥 Coba Prediksi Data Baru")
 
@@ -76,19 +96,17 @@ if st.button("Prediksi"):
     }
     contoh_df = pd.DataFrame(contoh_data)
 
-    # transform data baru
+    # Transformasi label seperti data training
     for col in contoh_df.columns:
         if col in label_encoders:
             contoh_df[col] = contoh_df[col].astype(str)
             contoh_df[col] = contoh_df[col].map(lambda x: x if x in label_encoders[col].classes_ else label_encoders[col].classes_[0])
             contoh_df[col] = label_encoders[col].transform(contoh_df[col])
 
-    hasil_pred = model.predict(contoh_df)
-    pred_label = label_encoders[target].inverse_transform(hasil_pred)
-    st.success(f"Prediksi: **{pred_label[0]}**")
+    # Normalisasi
+    contoh_scaled = scaler.transform(contoh_df)
 
-# ================================
-# 7️⃣ Footer
-# ================================
-st.markdown("---")
-st.caption("Dibuat dengan menggunakan Streamlit & Scikit-learn")
+    hasil_pred = model.predict(contoh_scaled)
+    pred_label = label_encoders[target].inverse_transform(hasil_pred)
+    st.success(f" Prediksi: **{pred_label[0]}**")
+
